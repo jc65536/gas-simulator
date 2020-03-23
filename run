@@ -1,0 +1,5 @@
+./dynamic_compile gas.exe main.cpp Particle.cpp &> gout
+
+if [ $? -eq 0 ]; then
+    ./gas.exe &> cout
+fi
