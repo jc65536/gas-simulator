@@ -1,12 +1,17 @@
+#include "Particle.h"
 #include "main.h"
+#include <GL/glut.h>
+#include <windows.h>
+#include <cmath>
 
-Particle::Particle(int i, double x, double y, double vx, double vy) {
-    this->i = i;
-    this->x = x;
-    this->y = y;
-    this->vx = vx;
-    this->vy = vy;
-    updateKeys();
+int Particle::nExists;
+
+Particle::Particle() {
+    i = ++nExists;
+    x = rand() % (int) (INIT_WIN_W - 2 * PARTICLE_RADIUS) + PARTICLE_RADIUS;
+    y = rand() % (int) (INIT_WIN_H - 2 * PARTICLE_RADIUS) + PARTICLE_RADIUS;
+    vx = (rand() % 20 * MAX_VX - 10 * MAX_VX) / 10.0;
+    vy = (rand() % 20 * MAX_VX - 10 * MAX_VX) / 10.0;
 }
 
 void Particle::draw() {
@@ -41,39 +46,37 @@ void Particle::draw() {
     */
 }
 
-void Particle::update() {
-    if (y + r + vy > WINDOW_H || y - r + vy < 0) {
-        if (GetKeyState(VK_SHIFT) & 0x8000) {
-            if (GetKeyState('C') & 0x8000)
-                vy *= 0.9;
-            else if (GetKeyState('H') & 0x8000)
-                vy *= 1.11;
+void Particle::updatePos() {
+    if (x - r + vx < 0) {
+        if (keyDown(VK_SHIFT) && keyDown('H')) vx *= 1.11;
+        if (keyDown('C')) vx *= 0.9;
+        vx = -vx;
+    }
+
+    if (x + r + vx > GET_WIN_W) {
+        if (keyDown(VK_SHIFT) && keyDown('C')) vx *= 0.9;
+        if (keyDown('H')) vx *= 1.11;
+        vx = -vx;
+    }
+
+    if (y - r + vy < 0) {
+        if (keyDown(VK_SHIFT)) {
+            if (keyDown('C')) vy *= 0.9;
+            if (keyDown('H')) vy *= 1.11;
         }
         vy = -vy;
     }
 
-    if (x + r + vx > WINDOW_W) {
-        if (GetKeyState('H') & 0x8000)
-            vx *= 1.11;
-        if (GetKeyState(VK_SHIFT) & GetKeyState('C') & 0x8000)
-            vx *= 0.9;
-        vx = -vx;
+    if (y + r + vy > GET_WIN_H) {
+        if (keyDown(VK_SHIFT)) {
+            if (keyDown('C')) vy *= 0.9;
+            if (keyDown('H')) vy *= 1.11;
+        }
+        vy = -vy;
     }
 
-    if (x - r + vx < 0) {
-        if (GetKeyState('C') & 0x8000)
-            vx *= 0.9;
-        if (GetKeyState(VK_SHIFT) & GetKeyState('H') & 0x8000)
-            vx *= 0.9;
-        vx = -vx;
-    }
-
-    x = std::min(std::max(x + vx, r), (double) WINDOW_W - r);
-    y = std::min(std::max(y + vy, r), (double) WINDOW_H - r);
-}
-
-bool Particle::collides(Particle &p) {
-    return pow(x - p.x, 2) + pow(y - p.y, 2) < pow(r + p.r, 2);
+    x = std::min(std::max(x + vx, r), (double) GET_WIN_W - r);
+    y = std::min(std::max(y + vy, r), (double) GET_WIN_H - r);
 }
 
 void Particle::updateKeys() {
@@ -85,34 +88,34 @@ void Particle::updateKeys() {
 }
 
 void Particle::setColor() {
-    double rv = (1 - (vx * vx + vy * vy) / sqrt(2) / MAX_VX) * 240;
-    double X = 1 - abs(fmod(rv / 60, 2) - 1);
-    switch ((int) rv / 60) {
+    double h = (1 - sqrt((vx * vx + vy * vy) / (2 * MAX_VX * MAX_VX))) * 270;
+    double x = 1 - abs(fmod(h / 60, 2) - 1);
+    switch ((int) h / 60) {
     case 0:
-        glColor3f(1.0, X, 0);
+        glColor3f(1.0, x, 0);
         break;
     case 1:
-        glColor3f(X, 1.0, 0);
+        glColor3f(x, 1.0, 0);
         break;
     case 2:
-        glColor3f(0, 1.0, X);
+        glColor3f(0, 1.0, x);
         break;
     case 3:
-        glColor3f(0, X, 1.0);
+        glColor3f(0, x, 1.0);
         break;
     case 4:
-        glColor3f(X, 0, 1.0);
+        glColor3f(x, 0, 1.0);
         break;
     case 5:
-        glColor3f(1.0, 0, X);
+        glColor3f(1.0, 0, x);
         break;
     }
 }
 
-void Particle::heat(int d) {
-    if (d == 0) {
-        vx += (MAX_VX - vx) * 0.1;
-    } else if (d == 1) {
-        vy += (MAX_VX - vy) * 0.1;
-    }
+bool keyDown(int k) {
+    return GetKeyState(k) & 0x8000;
+}
+
+bool collides(Particle &p, Particle &q) {
+    return p != q && pow(p.x - q.x, 2) + pow(p.y - q.y, 2) < pow(p.r + q.r, 2);
 }

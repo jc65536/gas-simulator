@@ -1,30 +1,31 @@
 #ifndef PARTICLE_H
 #define PARTICLE_H
 
-#include "main.h"
+#include <set>
+
+#define PARTICLE_RADIUS 5.0
+#define MAX_VX 4.0
+#define ParticleRef std::reference_wrapper<Particle>
+#define HashMap std::map<IntPair, std::vector<ParticleRef>>
 
 class Particle {
 public:
-    int i;
-    double x, y, r = RADIUS, vx, vy;
-    std::set<IntPair> keys;
+    static int nExists;
+    int i; // Particle ID
+    double x, y, vx, vy;
+    const double r = PARTICLE_RADIUS;
+    std::set<std::pair<int, int>> keys;
 
-    Particle() {}
-
+    Particle();
     Particle(int i, double x, double y, double vx, double vy);
 
     void draw();
 
-    void update();
-
-    bool collides(Particle &p);
+    void updatePos();
 
     void updateKeys();
 
     void setColor();
-
-    void heat(int d);
-    void cool(int d);
 
     bool operator==(Particle &p) {
         return i == p.i;
@@ -34,5 +35,9 @@ public:
         return i != p.i;
     }
 };
+
+// Util functions
+bool keyDown(int k);
+bool collides(Particle &p, Particle &q);
 
 #endif //PARTICLE_H

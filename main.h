@@ -1,31 +1,26 @@
 #ifndef MAIN_H
 #define MAIN_H
 
-#include <GL/glut.h>
-#include <cmath>
-#include <iostream>
-#include <vector>
+#include "Particle.h"
 #include <map>
-#include <set>
+#include <vector>
 #include <functional>
-#include <algorithm>
-#include <windows.h>
 
 #define PI 3.141593
 #define CELL_SIZE 100
-#define MAX_VX 40.0
 #define NUM_PARTICLES 200
-#define RADIUS 5
 #define FPS 60
 #define IntPair std::pair<int, int>
 #define ParticleRef std::reference_wrapper<Particle>
 #define HashMap std::map<IntPair, std::vector<ParticleRef>>
-#define WINDOW_W glutGet(GLUT_WINDOW_WIDTH)
-#define WINDOW_H glutGet(GLUT_WINDOW_HEIGHT)
 
-#include "Particle.h"
+#define INIT_WIN_X 200
+#define INIT_WIN_Y 100
+#define INIT_WIN_W 500
+#define INIT_WIN_H 500
+#define GET_WIN_W glutGet(GLUT_WINDOW_WIDTH)
+#define GET_WIN_H glutGet(GLUT_WINDOW_HEIGHT)
 
-void init();
 void display();
 void reshape(int, int);
 void timer(int);
