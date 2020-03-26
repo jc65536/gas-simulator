@@ -3,21 +3,21 @@
 
 #include <set>
 
-#define PARTICLE_RADIUS 5.0
-#define MAX_VX 4.0
-#define ParticleRef std::reference_wrapper<Particle>
-#define HashMap std::map<IntPair, std::vector<ParticleRef>>
+#define PARTICLE_RADIUS 5
+#define CELL_SIZE 100
+#define MAX_VX 6.0
+#define GET_WIN_W glutGet(GLUT_WINDOW_WIDTH)
+#define GET_WIN_H glutGet(GLUT_WINDOW_HEIGHT)
 
 class Particle {
 public:
-    static int nExists;
+    static int n;
     int i; // Particle ID
     double x, y, vx, vy;
-    const double r = PARTICLE_RADIUS;
+    int r;
     std::set<std::pair<int, int>> keys;
 
-    Particle();
-    Particle(int i, double x, double y, double vx, double vy);
+    Particle(int r);
 
     void draw();
 
