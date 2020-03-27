@@ -1,0 +1,4 @@
+main.cpp: In function 'void timer(int)':
+main.cpp:87:19: warning: ISO C++ forbids converting a string constant to 'char*' [-Wwrite-strings]
+   87 |             print("");
+      |                   ^~

@@ -5,26 +5,34 @@
 #include <iostream>
 #include <windows.h>
 
-int Particle::n;
+int Particle::n, Particle::cellw;
 
-Particle::Particle(int rad) {
+Particle::Particle(double r, double maxv) {
     i = n++;
-    x = rand() % (int) (INIT_WIN_W - 2 * PARTICLE_RADIUS) + PARTICLE_RADIUS;
-    y = rand() % (int) (INIT_WIN_H - 2 * PARTICLE_RADIUS) + PARTICLE_RADIUS;
-    vx = (rand() % 20 * MAX_VX - 10 * MAX_VX) / 10.0;
-    vy = (rand() % 20 * MAX_VX - 10 * MAX_VX) / 10.0;
-    r = rad;
+    x = rand() % (int) (INIT_WIN_W - 2 * r) + r;
+    y = rand() % (int) (INIT_WIN_H - 2 * r) + r;
+    vx = (rand() % 20 * maxv - 10 * maxv) / 10.0;
+    vy = (rand() % 20 * maxv - 10 * maxv) / 10.0;
+    this->r = r;
+    this->maxv = maxv;
     updateKeys();
 }
 
 void Particle::draw() {
     // actual particle
-    glBegin(GL_POLYGON);
     setColor();
-    for (double t = 0; t < 2 * PI; t += 0.05) {
-        glVertex2f(x + r * cos(t), y + r * sin(t));
+    if (r <= 1) {
+        glPointSize(2 * r);
+        glBegin(GL_POINTS);
+        glVertex2f(x, y);
+        glEnd();
+    } else {
+        glBegin(GL_POLYGON);
+        for (double t = 0; t < 2 * PI; t += 0.05) {
+            glVertex2f(x + r * cos(t), y + r * sin(t));
+        }
+        glEnd();
     }
-    glEnd();
 
     /*
     // velocity vector
@@ -52,36 +60,36 @@ void Particle::draw() {
 void Particle::updatePos() {
     if (x - r + vx < 0) {
         if (keyDown('C'))
-            vx = (vx - MAX_VX / 10) / 2;
+            vx = (vx - maxv / 10) / 2;
         else if (!keyDown(VK_SHIFT) && keyDown('H'))
-            vx = (vx - MAX_VX * 2) / 2;
+            vx = (vx - maxv) / 2;
         vx = -vx;
     }
-    
+
     if (x + r + vx > GET_WIN_W) {
         if (!keyDown(VK_SHIFT) && keyDown('C'))
-            vx = (vx + MAX_VX / 10) / 2;
+            vx = (vx + maxv / 10) / 2;
         else if (keyDown('H'))
-            vx = (vx + MAX_VX * 1.5) / 2;
+            vx = (vx + maxv) / 2;
         vx = -vx;
     }
 
     if (y - r + vy < 0) {
         if (!keyDown(VK_SHIFT)) {
             if (keyDown('C'))
-                vy = (vy - MAX_VX / 10) / 2;
+                vy = (vy - maxv / 10) / 2;
             else if (keyDown('H'))
-                vy = (vy - MAX_VX * 1.5) / 2;
+                vy = (vy - maxv) / 2;
         }
         vy = -vy;
     }
-    
+
     if (y + r + vy > GET_WIN_H) {
         if (!keyDown(VK_SHIFT)) {
             if (keyDown('C'))
-                vy = (vy + MAX_VX / 10) / 2;
+                vy = (vy + maxv / 10) / 2;
             else if (keyDown('H'))
-                vy = (vy + MAX_VX * 1.5) / 2;
+                vy = (vy + maxv * 1.5) / 2;
         }
         vy = -vy;
     }
@@ -92,18 +100,18 @@ void Particle::updatePos() {
 
 void Particle::updateKeys() {
     keys.clear();
-    keys.insert(IntPair((x - r) / CELL_SIZE, (y - r) / CELL_SIZE));
-    keys.insert(IntPair((x + r) / CELL_SIZE, (y - r) / CELL_SIZE));
-    keys.insert(IntPair((x + r) / CELL_SIZE, (y + r) / CELL_SIZE));
-    keys.insert(IntPair((x - r) / CELL_SIZE, (y + r) / CELL_SIZE));
+    keys.insert(IntPair((x - r) / cellw, (y - r) / cellw));
+    keys.insert(IntPair((x + r) / cellw, (y - r) / cellw));
+    keys.insert(IntPair((x + r) / cellw, (y + r) / cellw));
+    keys.insert(IntPair((x - r) / cellw, (y + r) / cellw));
 }
 
 void Particle::setColor() {
-    if (vx * vx + vy * vy > 2 * MAX_VX * MAX_VX) {
+    if (pow(vx, 2) + pow(vy, 2) > 2 * pow(maxv, 2)) {
         glColor3f(1.0, 0, 0);
         return;
     }
-    double h = (1 - sqrt((vx * vx + vy * vy) / (2 * MAX_VX * MAX_VX))) * 270;
+    double h = (1 - sqrt((pow(vx, 2) + pow(vy, 2)) / (2 * pow(maxv, 2)))) * 270;
     double x = 1 - abs(fmod(h / 60, 2) - 1);
     switch ((int) h / 60) {
     case 0:

@@ -47,6 +47,8 @@
         "map": "cpp",
         "set": "cpp",
         "iomanip": "cpp",
-        "ctime": "cpp"
+        "ctime": "cpp",
+        "chrono": "cpp",
+        "ratio": "cpp"
     }
 }

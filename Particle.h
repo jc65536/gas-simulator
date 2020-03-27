@@ -3,21 +3,18 @@
 
 #include <set>
 
-#define PARTICLE_RADIUS 5
-#define CELL_SIZE 100
 #define MAX_VX 6.0
 #define GET_WIN_W glutGet(GLUT_WINDOW_WIDTH)
 #define GET_WIN_H glutGet(GLUT_WINDOW_HEIGHT)
 
 class Particle {
 public:
-    static int n;
+    static int n, cellw;
     int i; // Particle ID
-    double x, y, vx, vy;
-    int r;
+    double x, y, r, vx, vy, maxv;
     std::set<std::pair<int, int>> keys;
 
-    Particle(int r);
+    Particle(double r, double maxv);
 
     void draw();
 

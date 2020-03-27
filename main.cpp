@@ -1,34 +1,41 @@
+/*
+TODO:
+ - make collision detection based on intersecting path lines
+ - optimize!!
+ - add buttons to heat/cool
+ - add data visualizations
+ - add customizable runs
+*/
+
 #include "main.h"
+#include "util.h"
 #include <GL/glut.h>
 #include <algorithm>
 #include <cmath>
-#include <fstream>
-#include <iomanip>
-#include <iostream>
 
 bool operator<(const Particle &p, const Particle &q) {
     return p.i < q.i;
 }
 
-std::ofstream fout("output.txt");
 std::vector<Particle> all;
-HashMap m;
-bool flag = true;
+HashMap map;
+
+bool pause = false;
+int n = 1000; // Goal: simulate 10k particles at 60 fps!
+double r = 5;
+int fps = 60;
+int cellw = 10;
+double maxv = 10.0; // in one dimension, actual max v is maxv * sqrt(2)
 
 int main(int argc, char *argv[]) {
-    int n = 2000;
-    int r = 5;
-    int fps = 60;
-
     all.reserve(n);
+    Particle::cellw = cellw;
     for (int i = 0; i < n; i++) {
-        all.push_back(Particle(r));
+        all.push_back(Particle(r, maxv));
         for (IntPair k : all[i].keys) {
             mapParticle(k, i);
         }
     }
-
-    printMap();
 
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);
@@ -41,7 +48,6 @@ int main(int argc, char *argv[]) {
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
     glutTimerFunc(0, timer, fps);
-    glClearColor(0.0, 0.0, 0.0, 1.0);
 
     glutMainLoop();
 }
@@ -54,7 +60,7 @@ void display() {
     for (Particle &p : all) {
         // deregister all of p's keys so we can update them below
         for (IntPair k : p.keys) {
-            std::vector<int> &bucket = m.find(k)->second;
+            std::vector<int> &bucket = map.find(k)->second;
             bucket.erase(std::find(bucket.begin(), bucket.end(), p.i));
         }
 
@@ -66,19 +72,13 @@ void display() {
             // check collision with all particles in k's cell
             std::vector<int> &bucket = mapParticle(k, p.i);
             for (int q : bucket) {
-                if (collides(p.i, q))
-                    collisions.insert(q);
+                if (collides(p.i, q) && collisions.insert(q).second) evalCollision(p.i, q);
             }
-        }
-
-        for (int q : collisions) {
-            evalCollision(p.i, q);
         }
 
         p.updatePos();
         p.draw();
     }
-
     glutSwapBuffers();
 }
 
@@ -91,29 +91,29 @@ void reshape(int w, int h) {
 }
 
 void timer(int fps) {
-    if (flag) {
+    if (!pause) {
         if (keyDown('P')) {
-            fout << std::endl;
+            print("");
             printSpeeds();
-            flag = false;
+            pause = true;
         }
         glutPostRedisplay();
     } else {
         if (keyDown('R')) {
-            flag = true;
+            pause = false;
         }
     }
     glutTimerFunc(1000 / fps, timer, fps);
 }
 
 std::vector<int> &mapParticle(IntPair k, int p) {
-    if (m.count(k) > 0) {
-        std::vector<int> &bucket = m.find(k)->second;
+    if (map.count(k) > 0) {
+        std::vector<int> &bucket = map.find(k)->second;
         bucket.push_back(p);
         return bucket;
     } else {
         std::vector<int> v = {p};
-        return m.insert(std::pair<IntPair, std::vector<int>>(k, v)).first->second;
+        return map.insert(std::pair<IntPair, std::vector<int>>(k, v)).first->second;
     }
 }
 
@@ -149,34 +149,6 @@ void evalCollision(int p, int q) {
     // Make sure particles aren't overlapping
     all[q].x = all[p].x + (all[p].r + all[q].r) * cos(atp);
     all[q].y = all[p].y + (all[p].r + all[q].r) * sin(atp);
-}
-
-// Util
-void printMap() {
-    for (auto &e : m) {
-        fout << "(" << e.first.first << ", " << e.first.second << ") : ";
-        for (int f : e.second) {
-            fout << f << ", ";
-        }
-        fout << std::endl;
-    }
-    fout << std::endl;
-}
-
-void printSpeeds() {
-    int a[40] = {0};
-    for (Particle &p : all) {
-        double s = sqrt(p.vx * p.vx + p.vy * p.vy);
-        a[(int) s]++;
-    }
-    fout << "speed | count |" << std::endl;
-    for (int i = 0; i < 20; i++) {
-        fout << std::setw(i < 9 ? 3 : 2) << i << "-" << i + 1 << " | " << std::setw(5) << a[i] << " |";
-        for (int j = 0; j < a[i]; j++) {
-            fout << "*";
-        }
-        fout << std::endl;
-    }
 }
 
 bool collides(int p, int q) {
