@@ -1,16 +1,15 @@
 #include "Particle.h"
 #include "main.h"
-#include <GL/glut.h>
 #include <cmath>
 #include <iostream>
 #include <windows.h>
 
 int Particle::n, Particle::cellw;
 
-Particle::Particle(double r, double maxv) {
+Particle::Particle(int r, double maxv) {
     i = n++;
-    x = rand() % (int) (INIT_WIN_W - 2 * r) + r;
-    y = rand() % (int) (INIT_WIN_H - 2 * r) + r;
+    x = rand() % (INIT_WIN_W - 2 * r) + r;
+    y = rand() % (INIT_WIN_H - 2 * r) + r;
     vx = (rand() % 20 * maxv - 10 * maxv) / 10.0;
     vy = (rand() % 20 * maxv - 10 * maxv) / 10.0;
     this->r = r;
@@ -57,7 +56,10 @@ void Particle::draw() {
     */
 }
 
-void Particle::updatePos() {
+void Particle::updatePos(GLFWwindow *window) {
+    int w, h;
+    glfwGetWindowSize(window, &w, &h);
+
     if (x - r + vx < 0) {
         if (keyDown('C'))
             vx = (vx - maxv / 10) / 2;
@@ -66,7 +68,7 @@ void Particle::updatePos() {
         vx = -vx;
     }
 
-    if (x + r + vx > GET_WIN_W) {
+    if (x + r + vx > w) {
         if (!keyDown(VK_SHIFT) && keyDown('C'))
             vx = (vx + maxv / 10) / 2;
         else if (keyDown('H'))
@@ -84,7 +86,7 @@ void Particle::updatePos() {
         vy = -vy;
     }
 
-    if (y + r + vy > GET_WIN_H) {
+    if (y + r + vy > h) {
         if (!keyDown(VK_SHIFT)) {
             if (keyDown('C'))
                 vy = (vy + maxv / 10) / 2;
@@ -94,8 +96,8 @@ void Particle::updatePos() {
         vy = -vy;
     }
 
-    x = std::min(std::max(x + vx, (double) r), (double) GET_WIN_W - r);
-    y = std::min(std::max(y + vy, (double) r), (double) GET_WIN_H - r);
+    x = std::min(std::max(x + vx, (double) r), (double) w - r);
+    y = std::min(std::max(y + vy, (double) r), (double) h - r);
 }
 
 void Particle::updateKeys() {

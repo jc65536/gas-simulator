@@ -5,11 +5,11 @@ TODO:
  - add buttons to heat/cool
  - add data visualizations
  - add customizable runs
+ - make 3d???
 */
 
 #include "main.h"
 #include "util.h"
-#include <GL/glut.h>
 #include <algorithm>
 #include <cmath>
 
@@ -21,11 +21,11 @@ std::vector<Particle> all;
 HashMap map;
 
 bool pause = false;
-int n = 1000; // Goal: simulate 10k particles at 60 fps!
-double r = 5;
+int n = 800; // Goal: simulate 10k particles at 60 fps!
+int r = 8;
 int fps = 60;
-int cellw = 10;
-double maxv = 10.0; // in one dimension, actual max v is maxv * sqrt(2)
+int cellw = 15;
+double maxv = 8.0; // in one dimension, actual max v is maxv * sqrt(2)
 
 int main(int argc, char *argv[]) {
     all.reserve(n);
@@ -37,22 +37,33 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);
+    if (!glfwInit()) exit(1);
 
-    glutInitWindowPosition(INIT_WIN_X, INIT_WIN_Y);
-    glutInitWindowSize(INIT_WIN_W, INIT_WIN_H);
+    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+    GLFWwindow *window = glfwCreateWindow(INIT_WIN_W, INIT_WIN_H, "Gas Simulator", nullptr, nullptr);
 
-    glutCreateWindow("Gas Simulator");
+    if (!window) {
+        glfwTerminate();
+        exit(1);
+    }
 
-    glutDisplayFunc(display);
-    glutReshapeFunc(reshape);
-    glutTimerFunc(0, timer, fps);
+    glfwMakeContextCurrent(window);
 
-    glutMainLoop();
+    glfwSetWindowPos(window, INIT_WIN_X, INIT_WIN_Y);
+    glfwShowWindow(window);
+
+    // main loop
+    while (!glfwWindowShouldClose(window)) {
+        reshape(window);
+        timer(window, fps);
+        glfwPollEvents();
+    }
+
+    glfwDestroyWindow(window);
+    glfwTerminate();
 }
 
-void display() {
+void display(GLFWwindow *window) {
     glClear(GL_COLOR_BUFFER_BIT);
     glLoadIdentity();
 
@@ -76,13 +87,15 @@ void display() {
             }
         }
 
-        p.updatePos();
+        p.updatePos(window);
         p.draw();
     }
-    glutSwapBuffers();
+    glfwSwapBuffers(window);
 }
 
-void reshape(int w, int h) {
+void reshape(GLFWwindow *window) {
+    int w, h;
+    glfwGetFramebufferSize(window, &w, &h);
     glViewport(0, 0, w, h);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -90,20 +103,25 @@ void reshape(int w, int h) {
     glMatrixMode(GL_MODELVIEW);
 }
 
-void timer(int fps) {
-    if (!pause) {
-        if (keyDown('P')) {
-            print("");
-            printSpeeds();
-            pause = true;
+void timer(GLFWwindow *window, int fps) {
+    double period = 1.0 / fps;
+    print(glfwGetTime());
+
+    if (glfwGetTime() > period) {
+        if (!pause) {
+            if (keyDown('P')) {
+                print("");
+                printSpeeds();
+                pause = true;
+            }
+            display(window);
+        } else {
+            if (keyDown('R')) {
+                pause = false;
+            }
         }
-        glutPostRedisplay();
-    } else {
-        if (keyDown('R')) {
-            pause = false;
-        }
+        glfwSetTime(0.0);
     }
-    glutTimerFunc(1000 / fps, timer, fps);
 }
 
 std::vector<int> &mapParticle(IntPair k, int p) {

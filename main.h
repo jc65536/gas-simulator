@@ -1,24 +1,20 @@
 #ifndef MAIN_H
 #define MAIN_H
 
+#define GLFW_DLL
+
 #include "Particle.h"
+#include "defines.h"
 #include <map>
 #include <vector>
 #include <functional>
+#include <GL/glew.h>
+#include <GL/glu.h>
+#include <GLFW/glfw3.h>
 
-#define PI 3.141593
-#define IntPair std::pair<int, int>
-#define ParticleRef std::reference_wrapper<Particle>
-#define HashMap std::map<IntPair, std::vector<int>>
-
-#define INIT_WIN_X 200
-#define INIT_WIN_Y 100
-#define INIT_WIN_W 800
-#define INIT_WIN_H 500
-
-void display();
-void reshape(int, int);
-void timer(int);
+void display(GLFWwindow *window);
+void reshape(GLFWwindow *window);
+void timer(GLFWwindow *window, int fps);
 std::vector<int> &mapParticle(IntPair k, int p);
 bool collides(int p, int q);
 void evalCollision(int p, int q);

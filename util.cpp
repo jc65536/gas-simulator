@@ -13,6 +13,14 @@ void print(char s[]) {
     fout << s << std::endl;
 }
 
+void print(double s) {
+    fout << s << std::endl;
+}
+
+void print(int s) {
+    fout << s << std::endl;
+}
+
 int tStart() {
     timers.push_back(std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     return timers.size() - 1;

@@ -1,5 +1,1 @@
-./dynamic_compile gas.exe main.cpp Particle.cpp util.cpp &> gout
-
-if [ $? -eq 0 ]; then
-    ./gas.exe
-fi
+./compile gas.exe main.cpp Particle.cpp util.cpp &> gout && ./gas.exe

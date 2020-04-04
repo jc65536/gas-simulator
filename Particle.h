@@ -1,24 +1,25 @@
 #ifndef PARTICLE_H
 #define PARTICLE_H
 
+#include "defines.h"
 #include <set>
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
 
 #define MAX_VX 6.0
-#define GET_WIN_W glutGet(GLUT_WINDOW_WIDTH)
-#define GET_WIN_H glutGet(GLUT_WINDOW_HEIGHT)
 
 class Particle {
 public:
     static int n, cellw;
-    int i; // Particle ID
-    double x, y, r, vx, vy, maxv;
-    std::set<std::pair<int, int>> keys;
+    int i, r; // Particle ID
+    double x, y, vx, vy, maxv;
+    std::set<IntPair> keys;
 
-    Particle(double r, double maxv);
+    Particle(int r, double maxv);
 
     void draw();
 
-    void updatePos();
+    void updatePos(GLFWwindow *window);
 
     void updateKeys();
 

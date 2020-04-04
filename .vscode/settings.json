@@ -49,6 +49,8 @@
         "iomanip": "cpp",
         "ctime": "cpp",
         "chrono": "cpp",
-        "ratio": "cpp"
+        "ratio": "cpp",
+        "cinttypes": "cpp",
+        "any": "cpp"
     }
 }
