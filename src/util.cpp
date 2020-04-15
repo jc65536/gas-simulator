@@ -37,30 +37,3 @@ unsigned long long tEnd(int i) {
     timers.erase(timers.begin() + i);
     return t - timers[i];
 }
-
-void printMap() {
-    for (auto &e : map) {
-        fout << "(" << e.first.first << ", " << e.first.second << ") : ";
-        for (int f : e.second) {
-            fout << f << ", ";
-        }
-        fout << std::endl;
-    }
-    fout << std::endl;
-}
-
-void printSpeeds() {
-    int a[40] = {0};
-    for (Particle &p : all) {
-        double s = sqrt(p.vx * p.vx + p.vy * p.vy);
-        a[(int) s]++;
-    }
-    fout << "speed | count |" << std::endl;
-    for (int i = 0; i < 20; i++) {
-        fout << std::setw(i < 9 ? 3 : 2) << i << "-" << i + 1 << " | " << std::setw(5) << a[i] << " |";
-        for (int j = 0; j < a[i]; j++) {
-            fout << "*";
-        }
-        fout << std::endl;
-    }
-}

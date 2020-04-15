@@ -6,15 +6,17 @@
 
 int Particle::n, Particle::cellw;
 
-Particle::Particle(int r, double maxv) {
+Particle::Particle(int r, double maxv, int w, int h) {
     i = n++;
-    x = rand() % (INIT_WIN_W - 2 * r) + r;
-    y = rand() % (INIT_WIN_H - 2 * r) + r;
+    x = rand() % (w - 2 * r) + r;
+    y = rand() % (h - 2 * r) + r;
+    std::cout << x << "," << y;
     vx = (rand() % 20 * maxv - 10 * maxv) / 10.0;
     vy = (rand() % 20 * maxv - 10 * maxv) / 10.0;
     this->r = r;
     this->maxv = maxv;
     updateKeys();
+    std::cout << "Particle created" << i << std::endl;
 }
 
 void Particle::draw() {
@@ -56,9 +58,7 @@ void Particle::draw() {
     */
 }
 
-void Particle::updatePos(GLFWwindow *window) {
-    int w, h;
-    glfwGetWindowSize(window, &w, &h);
+void Particle::updatePos(int w, int h) {
 
     if (x - r + vx < 0) {
         if (keyDown('C'))

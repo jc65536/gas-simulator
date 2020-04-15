@@ -7,7 +7,5 @@ unsigned long long tEnd(int i);
 void print(char s[]);
 void print(double s);
 void print(int s);
-void printMap();
-void printSpeeds();
 
 #endif //UTIL_H

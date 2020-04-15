@@ -15,11 +15,11 @@ public:
     double x, y, vx, vy, maxv;
     std::set<IntPair> keys;
 
-    Particle(int r, double maxv);
+    Particle(int r, double maxv, int w, int h);
 
     void draw();
 
-    void updatePos(GLFWwindow *window);
+    void updatePos(int w, int h);
 
     void updateKeys();
 

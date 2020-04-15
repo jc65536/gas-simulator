@@ -1,1 +1,0 @@
-g++ -o $1 ${@:2} -lglu32 -lopengl32 -lglew32 -lglfw3dll

@@ -1,1 +1,0 @@
-./compile gas.exe main.cpp Particle.cpp util.cpp &> gout && ./gas.exe

@@ -1,4 +1,0 @@
-main.cpp: In function 'void timer(GLFWwindow*, int)':
-main.cpp:113:25: warning: ISO C++ forbids converting a string constant to 'char*' [-Wwrite-strings]
-                 print("");
-                         ^

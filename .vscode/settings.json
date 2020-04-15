@@ -51,6 +51,11 @@
         "chrono": "cpp",
         "ratio": "cpp",
         "cinttypes": "cpp",
-        "any": "cpp"
+        "any": "cpp",
+        "stdlib.h": "c",
+        "*.fdsa": "cpp",
+        "condition_variable": "cpp",
+        "mutex": "cpp",
+        "thread": "cpp"
     }
 }
