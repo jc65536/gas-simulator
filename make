@@ -1,1 +1,0 @@
-g++ -o cptest.exe src/main.cpp src/ControlPanel.cpp src/GasSimulator.cpp src/Particle.cpp -I"include" -L"lib" -lglu32 -lopengl32 -lglew32 -lnanogui -lglfw3dll -std=c++17 &> gout && echo "Compilation success" || echo "Compilation failed"

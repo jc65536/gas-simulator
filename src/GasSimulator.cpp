@@ -1,16 +1,20 @@
 #include "GasSimulator.h"
+#include <GL/glu.h>
 #include <algorithm>
 #include <cmath>
 #include <iomanip>
 #include <iostream>
+#include <windows.h>
 
 GasSimulator::GasSimulator(int n, int r, double maxv, int fps, int x, int y, int w, int h, int cellw) {
+    // Get the GLFW working
     glfwInit();
-
+    glewInit();
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
     window = glfwCreateWindow(w, h, "Gas Simulator", nullptr, nullptr);
-    glfwSetWindowUserPointer(window, this);
-    glfwSetFramebufferSizeCallback(window, [](GLFWwindow *window, int w, int h) {
+
+    glfwSetWindowUserPointer(window, this); // to use in the following callback:
+    auto resize = [](GLFWwindow *window, int w, int h) {
         glViewport(0, 0, w, h);
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
@@ -19,64 +23,100 @@ GasSimulator::GasSimulator(int n, int r, double maxv, int fps, int x, int y, int
         GasSimulator *self = (GasSimulator *) glfwGetWindowUserPointer(window);
         self->w = w;
         self->h = h;
-    });
+    };
+    glfwSetFramebufferSizeCallback(window, resize);
+
     glfwSetWindowPos(window, x, y);
     glfwShowWindow(window);
     glfwMakeContextCurrent(window);
-    glViewport(0, 0, w, h);
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    gluOrtho2D(0, w, 0, h);
-    glMatrixMode(GL_MODELVIEW);
-    this->w = w;
-    this->h = h;
+    resize(window, w, h);
 
-    gasInit(n, r, maxv);
     this->cellw = cellw;
     this->fps = fps;
+    top = left = right = bottom = INSULATE;
+    gasInit(n, r, maxv);
 }
 
 void GasSimulator::gasInit(int n, int r, double maxv) {
-    particles.reserve(n);
-    particles.clear();
-    map.clear();
     this->n = n;
     this->r = r;
     this->maxv = maxv;
+    particles.clear();
+    particles.reserve(n);
+    Particle::n = 0;
+    map.clear();
     for (int i = 0; i < n; i++) {
-        particles.push_back(Particle(r, maxv, w, h));
+        int x = rand() % (w - 2 * r) + r;
+        int y = rand() % (h - 2 * r) + r;
+        particles.push_back(Particle(x, y, r, maxv));
+        updateKeys(particles[i]);
         for (IntPair k : particles[i].keys) {
-            mapParticle(k, particles[i].i);
+            mapKey(k, particles[i].i);
         }
     }
 }
 
-std::vector<int> &GasSimulator::mapParticle(IntPair k, int p) {
+void GasSimulator::update() {
+    glClear(GL_COLOR_BUFFER_BIT);
+    glLoadIdentity();
+
+    //draw
+    for (Particle &p : particles) {
+        // delete all of p's keys so we can update them below
+        for (IntPair k : p.keys) {
+            auto u = map.find(k);
+            std::vector<int> &bucket = u->second;
+            bucket.erase(std::find(bucket.begin(), bucket.end(), p.i));
+        }
+
+        updateKeys(p);
+
+        // need to use a set since each particle has 4 keys, so keys may overlap, especially on the edge of cells
+        std::set<int> collisions;
+        for (IntPair k : p.keys) {
+            // check collision with all particles in k's cell
+            std::vector<int> &bucket = mapKey(k, p.i);
+            for (int q : bucket) {
+                if (collides(p, particles[q]) && collisions.insert(q).second) {
+                    evalCollision(p.i, q);
+                }
+            }
+        }
+
+        updatePos(p);
+        p.draw();
+    }
+
+    glfwSwapBuffers(window);
+}
+
+std::vector<int> &GasSimulator::mapKey(IntPair k, int i) {
     if (map.count(k) > 0) {
         std::vector<int> &bucket = map.find(k)->second;
-        bucket.push_back(p);
+        bucket.push_back(i);
         return bucket;
     } else {
-        std::vector<int> v = {p};
+        std::vector<int> v = {i};
         return map.insert(std::pair<IntPair, std::vector<int>>(k, v)).first->second;
     }
 }
 
-void GasSimulator::evalCollision(int p, int q) {
-    double vp = sqrt(pow(particles[p].vx, 2) + pow(particles[p].vy, 2));                  // speed (velocity magnitude) of p
-    double avp = atan2(particles[p].vy, particles[p].vx);                                 // velocity angle of p
-    double atp = atan2(particles[q].y - particles[p].y, particles[q].x - particles[p].x); // transverse axis angle w/ respect to p
-    double arp = avp - atp;                                                               // reference angle of p (angle btwn velocity angle & transverse axis)
-    double vtp = vp * cos(arp);                                                           // transverse velocity component of p
-    double vtpx = vtp * cos(atp);                                                         // x component of transverse velocity component
-    double vtpy = vtp * sin(atp);                                                         // y component of transverse velocity component
-    double vcp = vp * sin(arp);                                                           // conjugate velocity component of p
-    double vcpx = vcp * cos(atp + PI / 2);                                                // x component of conjugate velocity component
-    double vcpy = vcp * sin(atp + PI / 2);                                                // y component of conjugate velocity component
+void GasSimulator::evalCollision(int i, int j) {
+    Particle &p = particles[i], &q = particles[j];
+    double vp = sqrt(pow(p.vx, 2) + pow(p.vy, 2)); // speed (velocity magnitude) of p
+    double avp = atan2(p.vy, p.vx);                // velocity angle of p
+    double atp = atan2(q.y - p.y, q.x - p.x);      // transverse axis angle w/ respect to p
+    double arp = avp - atp;                        // reference angle of p (angle btwn velocity angle & transverse axis)
+    double vtp = vp * cos(arp);                    // transverse velocity component of p
+    double vtpx = vtp * cos(atp);                  // x component of transverse velocity component
+    double vtpy = vtp * sin(atp);                  // y component of transverse velocity component
+    double vcp = vp * sin(arp);                    // conjugate velocity component of p
+    double vcpx = vcp * cos(atp + PI / 2);         // x component of conjugate velocity component
+    double vcpy = vcp * sin(atp + PI / 2);         // y component of conjugate velocity component
 
-    double vq = sqrt(pow(particles[q].vx, 2) + pow(particles[q].vy, 2)); // ditto for q
-    double avq = atan2(particles[q].vy, particles[q].vx);
-    double atq = atan2(particles[p].y - particles[q].y, particles[p].x - particles[q].x);
+    double vq = sqrt(pow(q.vx, 2) + pow(q.vy, 2)); // ditto for q
+    double avq = atan2(q.vy, q.vx);
+    double atq = atan2(p.y - q.y, p.x - q.x);
     double arq = avq - atq;
     double vtq = vq * cos(arq);
     double vtqx = vtq * cos(atq);
@@ -85,15 +125,100 @@ void GasSimulator::evalCollision(int p, int q) {
     double vcqx = vcq * cos(atq + PI / 2);
     double vcqy = vcq * sin(atq + PI / 2);
 
-    particles[p].vx = vcpx + vtqx;
-    particles[p].vy = vcpy + vtqy;
+    p.vx = vcpx + vtqx;
+    p.vy = vcpy + vtqy;
 
-    particles[q].vx = vcqx + vtpx;
-    particles[q].vy = vcqy + vtpy;
+    q.vx = vcqx + vtpx;
+    q.vy = vcqy + vtpy;
 
     // Make sure particles aren't overlapping
-    particles[q].x = particles[p].x + (particles[p].r + particles[q].r) * cos(atp);
-    particles[q].y = particles[p].y + (particles[p].r + particles[q].r) * sin(atp);
+    q.x = p.x + (p.r + q.r) * cos(atp);
+    q.y = p.y + (p.r + q.r) * sin(atp);
+}
+
+void GasSimulator::updatePos(Particle &p) {
+    double &x = p.x, &y = p.y;
+    double &vx = p.vx, &vy = p.vy;
+
+    if (x - r + vx < 0) {
+        switch (left) {
+        case COOL:
+            vx = -vx / 2;
+            break;
+        case INSULATE:
+            vx = -vx;
+            break;
+        case HEAT:
+            vx = -(vx - maxv) / 2;
+        }
+    }
+
+    if (x + r + vx > w) {
+        switch (right) {
+        case COOL:
+            vx = -vx / 2;
+            break;
+        case INSULATE:
+            vx = -vx;
+            break;
+        case HEAT:
+            vx = -(vx + maxv) / 2;
+        }
+    }
+
+    if (y - r + vy < 0) {
+        switch (bottom) {
+        case COOL:
+            vy = -vy / 2;
+            break;
+        case INSULATE:
+            vy = -vy;
+            break;
+        case HEAT:
+            vy = -(vy - maxv) / 2;
+        }
+    }
+    
+    if (y + r + vy > h) {
+        switch (top) {
+        case COOL:
+            vy = -vy / 2;
+            break;
+        case INSULATE:
+            vy = -vy;
+            break;
+        case HEAT:
+            vy = -(vy + maxv) / 2;
+        }
+    }
+
+    x = std::min(std::max(x + vx, (double) r), (double) w - r);
+    y = std::min(std::max(y + vy, (double) r), (double) h - r);
+}
+
+void GasSimulator::updateKeys(Particle &p) {
+    int x = p.x, y = p.y;
+    p.keys.clear();
+    p.keys.insert(IntPair((x - r) / cellw, (y - r) / cellw));
+    p.keys.insert(IntPair((x + r) / cellw, (y - r) / cellw));
+    p.keys.insert(IntPair((x + r) / cellw, (y + r) / cellw));
+    p.keys.insert(IntPair((x - r) / cellw, (y + r) / cellw));
+}
+
+void GasSimulator::mainloop() {
+    while (!glfwWindowShouldClose(window)) {
+        double period = 1.0 / fps;
+        if (glfwGetTime() > period) {
+            mu.lock();
+            update();
+            mu.unlock();
+            glfwSetTime(0.0);
+        }
+        glfwPollEvents();
+    }
+    glfwDestroyWindow(window);
+    glfwTerminate();
+    exit(0);
 }
 
 void GasSimulator::printMap() {
@@ -107,95 +232,6 @@ void GasSimulator::printMap() {
     std::cout << std::endl;
 }
 
-void GasSimulator::printSpeeds() {
-    int a[40] = {0};
-    for (Particle &p : particles) {
-        double s = sqrt(p.vx * p.vx + p.vy * p.vy);
-        a[(int) s]++;
-    }
-    std::cout << "speed | count |" << std::endl;
-    for (int i = 0; i < 20; i++) {
-        std::cout << std::setw(i < 9 ? 3 : 2) << i << "-" << i + 1 << " | " << std::setw(5) << a[i] << " |";
-        for (int j = 0; j < a[i]; j++) {
-            std::cout << "*";
-        }
-        std::cout << std::endl;
-    }
-}
-
-void GasSimulator::update() {
-    glClear(GL_COLOR_BUFFER_BIT);
-    glLoadIdentity();
-    //draw
-    //std::cout << 3;
-    for (Particle &p : particles) {
-        //std::cout << 4;
-        // deregister all of p's keys so we can update them below
-        for (IntPair k : p.keys) {
-            std::vector<int> &bucket = map.find(k)->second;
-            std::cout << 1;
-            bucket.erase(std::find(bucket.begin(), bucket.end(), p.i));
-        }
-        std::cout << 5;
-
-        p.updateKeys();
-        std::cout << 6;
-
-        // need to use a set since each particle has 4 keys, so sometimes they collide more times than desired
-        std::set<int> collisions;
-        for (IntPair k : p.keys) {
-            // check collision with all particles in k's cell
-            std::vector<int> &bucket = mapParticle(k, p.i);
-            std::cout << 2;
-            for (int q : bucket) {
-                //std::cout << q;
-                if (collides(p.i, q)) {
-                    std::cout << 9;
-                    if (collisions.insert(q).second) {
-                        evalCollision(p.i, q);
-                        
-                    }
-                    std::cout << 0;
-                }  
-                //std::cout << ".";
-            }
-            std::cout << std::endl;
-        }
-        std::cout << 7;
-
-        p.updatePos(w, h);
-        p.draw();
-        std::cout << 8 << std::endl;
-    }
-    glfwSwapBuffers(window);
-}
-
-bool GasSimulator::collides(int p, int q) {
-    return p != q && pow(particles[p].x - particles[q].x, 2) + pow(particles[p].y - particles[q].y, 2) < pow(particles[p].r + particles[q].r, 2);
-}
-
-void GasSimulator::mainloop() {
-    while (!glfwWindowShouldClose(window)) {
-
-        double period = 1.0 / fps;
-
-        if (glfwGetTime() > period) {
-            if (!pause) {
-                if (keyDown('P')) {
-                    pause = true;
-                }
-                mu.lock();
-                std::cout << "locked by gs" << std::endl;
-                update();
-                mu.unlock();
-                std::cout << "unlocked by gs" << std::endl;
-            } else {
-                if (keyDown('R')) {
-                    pause = false;
-                }
-            }
-            glfwSetTime(0.0);
-        }
-        glfwPollEvents();
-    }
+bool collides(Particle &p, Particle &q) {
+    return p != q && pow(p.x - q.x, 2) + pow(p.y - q.y, 2) < pow(p.r + q.r, 2);
 }

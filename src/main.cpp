@@ -8,28 +8,29 @@ TODO:
  - make 3d???
 */
 
-#include "main.h"
+#define GLFW_DLL
+
 #include "ControlPanel.h"
 #include "GasSimulator.h"
-#include "nanogui/nanogui.h"
-#include "util.h"
-#include <algorithm>
-#include <cmath>
 #include <iostream>
 #include <thread>
-
-bool pause = false;
-int fps = 60;
+#include <fstream>
 
 int main(int argc, char *argv[]) {
-    if (!glfwInit()) exit(1);
+    
+    //std::ofstream out("output.txt");
+    //std::cout.rdbuf(out.rdbuf());
+
     GasSimulator g;
+    
     std::thread t([&]() {
         ControlPanel cp(g);
         cp.mainloop();
-        std::cout << "cp thread is done?!" << std::endl;
+        std::cout << "cp thread somehow failed?" << std::endl;
     });
+    
     g.mainloop();
     t.join();
-    glfwTerminate();
+    
+    //std::cout.rdbuf(nullptr);
 }

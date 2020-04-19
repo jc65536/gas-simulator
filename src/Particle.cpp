@@ -1,22 +1,18 @@
 #include "Particle.h"
-#include "main.h"
 #include <cmath>
 #include <iostream>
 #include <windows.h>
 
-int Particle::n, Particle::cellw;
+int Particle::n;
 
-Particle::Particle(int r, double maxv, int w, int h) {
+Particle::Particle(double x, double y, int r, double maxv) {
     i = n++;
-    x = rand() % (w - 2 * r) + r;
-    y = rand() % (h - 2 * r) + r;
-    std::cout << x << "," << y;
+    this->x = x;
+    this->y = y;
     vx = (rand() % 20 * maxv - 10 * maxv) / 10.0;
     vy = (rand() % 20 * maxv - 10 * maxv) / 10.0;
     this->r = r;
     this->maxv = maxv;
-    updateKeys();
-    std::cout << "Particle created" << i << std::endl;
 }
 
 void Particle::draw() {
@@ -58,56 +54,6 @@ void Particle::draw() {
     */
 }
 
-void Particle::updatePos(int w, int h) {
-
-    if (x - r + vx < 0) {
-        if (keyDown('C'))
-            vx = (vx - maxv / 10) / 2;
-        else if (!keyDown(VK_SHIFT) && keyDown('H'))
-            vx = (vx - maxv) / 2;
-        vx = -vx;
-    }
-
-    if (x + r + vx > w) {
-        if (!keyDown(VK_SHIFT) && keyDown('C'))
-            vx = (vx + maxv / 10) / 2;
-        else if (keyDown('H'))
-            vx = (vx + maxv) / 2;
-        vx = -vx;
-    }
-
-    if (y - r + vy < 0) {
-        if (!keyDown(VK_SHIFT)) {
-            if (keyDown('C'))
-                vy = (vy - maxv / 10) / 2;
-            else if (keyDown('H'))
-                vy = (vy - maxv) / 2;
-        }
-        vy = -vy;
-    }
-
-    if (y + r + vy > h) {
-        if (!keyDown(VK_SHIFT)) {
-            if (keyDown('C'))
-                vy = (vy + maxv / 10) / 2;
-            else if (keyDown('H'))
-                vy = (vy + maxv * 1.5) / 2;
-        }
-        vy = -vy;
-    }
-
-    x = std::min(std::max(x + vx, (double) r), (double) w - r);
-    y = std::min(std::max(y + vy, (double) r), (double) h - r);
-}
-
-void Particle::updateKeys() {
-    keys.clear();
-    keys.insert(IntPair((x - r) / cellw, (y - r) / cellw));
-    keys.insert(IntPair((x + r) / cellw, (y - r) / cellw));
-    keys.insert(IntPair((x + r) / cellw, (y + r) / cellw));
-    keys.insert(IntPair((x - r) / cellw, (y + r) / cellw));
-}
-
 void Particle::setColor() {
     if (pow(vx, 2) + pow(vy, 2) > 2 * pow(maxv, 2)) {
         glColor3f(1.0, 0, 0);
@@ -135,8 +81,4 @@ void Particle::setColor() {
         glColor3f(1.0, 0, x);
         break;
     }
-}
-
-bool keyDown(int k) {
-    return GetKeyState(k) & 0x8000;
 }

@@ -1,12 +1,15 @@
 #ifndef GASSIMULATOR_H
 #define GASSIMULATOR_H
 
+#include "GL/glew.h"
 #include "Particle.h"
 #include "defines.h"
 #include "GLFW/glfw3.h"
 #include <map>
 #include <vector>
 #include <mutex>
+
+enum HeatState { COOL = 1, INSULATE = 2, HEAT = 3 };
 
 class GasSimulator {
 public:
@@ -17,17 +20,20 @@ public:
     bool pause = false;
     GLFWwindow *window;
     std::mutex mu;
+    HeatState top, left, right, bottom;
 
-    GasSimulator(int n = 2, int r = 10, double maxv = 10, int fps = 1, int x = 200, int y = 100, int w = 800, int h = 500, int cellw = 50);
+    GasSimulator(int n = 200, int r = 8, double maxv = 6, int fps = 60, int x = 200, int y = 100, int w = 1000, int h = 600, int cellw = 50);
 
     void gasInit(int n, int r, double maxv);
     void update();
-    bool collides(int p, int q);
-    std::vector<int> &mapParticle(IntPair k, int p);
-    void evalCollision(int p, int q);
-    void printMap();
-    void printSpeeds();
+    std::vector<int> &mapKey(IntPair k, int i);
+    void evalCollision(int i, int j);
+    void updatePos(Particle &p);
+    void updateKeys(Particle &p);
     void mainloop();
+    void printMap();
 };
+
+bool collides(Particle &p, Particle &q);
 
 #endif // GASSIMULATOR_H
